@@ -1,28 +1,27 @@
-const path = require('path');
-const http = require('http');
-const express = require('express');
-const socketio = require('socket.io');
+const app = require("express")();
+const httpServer = require("http").createServer(app);
+const io = require("socket.io")(httpServer, {
+    cors:{
+        origin: "*"
+    }
+});
 
-const app = express();
-const server = http.createServer(app);
-const io = socketio(server);
+io.on("connection", socket => { 
+    console.log("client connected") 
 
-const PORT = 4000 || process.env.PORT;
+    socket.emit('message', "Welcome to the server");
 
-// Run when a client connects
-io.on('connection', socket => {
-    console.log("New connection incoming...");
-    
-    // Welcome the current user
-    socket.emit('message', "Welcome to The Chat!");
-
-    //Broadcast when a user connects
     socket.broadcast.emit('message', 'A user has joined the chat');
 
-    // Runs on client disconnect
-    socket.on('disconnect', ()=> {
-        io.emit('message', 'A user has left the chat');
+    socket.on('chatMessage', msg => {
+        console.log("a user said:" + msg);
+        io.emit('message', msg)
     })
-})
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}\n\nHave a great day!`));
+    socket.on('disconnect', () => {
+        console.log("A user disconnected")
+        io.emit('message', "A user has left the chat");
+    })
+});
+
+httpServer.listen(4000, () => console.log("listening on port 4000"));
